@@ -1,0 +1,2 @@
+# Digital_WPF_ProductionLineSystem
+这是手机产线的上位机（服务端），负责接收机械臂和PLC的数据并传输到Unity的客户端中
