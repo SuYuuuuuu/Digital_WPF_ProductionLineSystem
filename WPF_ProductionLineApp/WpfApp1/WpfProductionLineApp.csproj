@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Images\Dobot.jpg" />
+    <None Remove="Images\Gray.jpg" />
+    <None Remove="Images\Green.jpg" />
+    <None Remove="Images\Red.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.1.0" />
+    <PackageReference Include="Fleck" Version="1.2.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.23.1" />
+    <PackageReference Include="HslCommunication" Version="11.3.3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\Dobot.jpg" />
+    <Resource Include="Images\Gray.jpg" />
+    <Resource Include="Images\Green.jpg" />
+    <Resource Include="Images\Red.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Auboi5FrameWork\dll\" />
+    <Folder Include="DobotCommunicationsFrameWork\MessageType\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+﻿<Page x:Class="WpfProductionLineApp.Views.RobotControl"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:WpfProductionLineApp.ViewModels"
+      mc:Ignorable="d" 
+      d:DesignHeight="500" d:DesignWidth="850"
+      Title="RobotControl" Background="FloralWhite">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Background="LightBlue" Height="20" Width="850" VerticalAlignment="Top">
+            <RadioButton Content="PTP指令" Margin="200,3" Command="{Binding ChangeControlPageCmd}" CommandParameter="/Views/RobotControl_PTP.xaml"  IsChecked="{Binding PtpPage_isChecked}"></RadioButton>
+            <RadioButton x:Name="JogBtn" Content="点动指令" Margin="80,3" Command="{Binding ChangeControlPageCmd}" CommandParameter="/Views/RobotControl_Jog.xaml" IsChecked="{Binding JogPage_isChecked}"></RadioButton>
+        </StackPanel>
+        <Frame x:Name="controlFrame" NavigationUIVisibility="Hidden" Source="{Binding ControlPageName}" Grid.Row="1"/>
+    </Grid>
+
+</Page>

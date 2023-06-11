@@ -1,0 +1,219 @@
+﻿<Page x:Class="WpfProductionLineApp.Views.RobotControl_Jog"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:WpfProductionLineApp.ViewModels"
+      xmlns:conver ="clr-namespace:WpfProductionLineApp.Converters"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="RobotControl_Jog" Background="Azure">
+    <Page.Resources>
+        <conver:StringToImageConverter x:Key="sti"/>
+        <conver:SuckStateToImageConverter x:Key="suckSti"/>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="50"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="DataText">
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Width" Value="45"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Background" Value="SteelBlue"/>
+            <Setter Property="Foreground" Value="WhiteSmoke"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="DecorateText">
+            <Setter Property="Height" Value="15"/>
+            <Setter Property="Width" Value="15"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Azure"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style TargetType="Image" x:Key="DobotImg_4">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked,ElementName=dobot4}" Value="False">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Image" x:Key="DobotImg_3">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked,ElementName=dobot3}" Value="False">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Image" x:Key="DobotImg_2">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked,ElementName=dobot2}" Value="False">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Image" x:Key="DobotImg_1">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsChecked,ElementName=dobot1}" Value="False">
+                    <Setter Property="Visibility" Value="Hidden"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+    </Page.Resources>
+    <Grid x:Name="gridRoot">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+            <RowDefinition Height="0.5*"/>
+        </Grid.RowDefinitions>
+
+        <Button Margin="140,65,10,65" Content="X-" />
+        <Button Margin="75,120,75,10" Content="Y-" />
+        <Button x:Name="x_Add" Margin="10,65,140,65" Content="X+" />
+        <Button Margin="75,10,75,120" Content="Y+" />
+        <Image Source="/Images/Dobot.jpg" Stretch="Fill" Width="50" Height="50"/>
+
+        <Button Margin="140,65,10,65" Grid.Column="1" Content="Z-" />
+        <Button Margin="75,120,75,10" Grid.Column="1" Content="R-" />
+        <Button Margin="10,65,140,65" Grid.Column="1" Content="Z+" />
+        <Button Margin="75,10,75,120" Grid.Column="1" Content="R+" />
+        <Image Source="/Images/Dobot.jpg" Stretch="Fill" Width="50" Height="50" Grid.Column="1"/>
+
+        <Button Margin="140,65,10,65" Grid.Column="2" Content="J1-" />
+        <Button Margin="75,120,75,10" Grid.Column="2" Content="J2-" />
+        <Button Margin="10,65,140,65" Grid.Column="2" Content="J1+"/>
+        <Button Margin="75,10,75,120" Grid.Column="2" Content="J2+" />
+        <Image Source="/Images/Dobot.jpg" Stretch="Fill" Width="50" Height="50" Grid.Column="2"/>
+
+        <Button Margin="140,65,10,65" Grid.Column="3" Content="J3-" />
+        <Button Margin="75,120,75,10" Grid.Column="3" Content="J4-" />
+        <Button Margin="10,65,140,65" Grid.Column="3" Content="J3+" />
+        <Button Margin="75,10,75,120" Grid.Column="3" Content="J4+" />
+        <Image Source="/Images/Dobot.jpg" Stretch="Fill" Width="50" Height="50" Grid.Column="3"/>
+
+        <WrapPanel Grid.Row="1" >
+            <TextBlock Text="{Binding RobotModel.Dobot1_X}" Margin="2,30" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_Y}" Margin="2,30" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_Z}" Margin="2,30" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_R}" Margin="2,30" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_J1}" Margin="2,20" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_J2}" Margin="2,20" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_J3}" Margin="2,20" Style="{StaticResource DataText}"/>
+            <TextBlock Text="{Binding RobotModel.Dobot1_J4}" Margin="2,20" Style="{StaticResource DataText}"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="1">
+            <TextBlock Text="X" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Y" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Z" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="R" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J1"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J2"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J3"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J4"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+        </WrapPanel>
+        <RadioButton x:Name="dobot1" Content="Dobot1#" Grid.Row="1" 
+                     VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5" FontStyle="Italic" FontWeight="ExtraBlack"
+                     Command="{Binding SelectBtnCmd}" CommandParameter="Dobot1#" IsChecked="{Binding Dobot1_isChecked}"/>
+        <Image Style="{StaticResource DobotImg_1}"  Source="{Binding RobotModel.StateDobot_1,Converter={StaticResource sti},Mode=OneWay}" 
+               Grid.Row="1"  Width="15" Height="15" Stretch="Fill" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+               Margin="45,5"/>
+
+        <WrapPanel Grid.Row="1" Grid.Column="1">
+            <TextBlock Text="{Binding RobotModel.Dobot2_X}" Margin="2,30" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_Y}" Margin="2,30" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_Z}" Margin="2,30" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_R}" Margin="2,30" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_J1}" Margin="2,20" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_J2}" Margin="2,20" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_J3}" Margin="2,20" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+            <TextBlock Text="{Binding RobotModel.Dobot2_J4}" Margin="2,20" Style="{StaticResource DataText}" Background="DarkSlateBlue"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="1" Grid.Column="1">
+            <TextBlock Text="X" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Y" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Z" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="R" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J1"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J2"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J3"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J4"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+        </WrapPanel>
+        <RadioButton x:Name="dobot2" Content="Dobot2#" Grid.Row="1" Grid.Column="1" 
+                     VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5" FontStyle="Italic" FontWeight="ExtraBlack"
+                     Command="{Binding SelectBtnCmd}" CommandParameter="Dobot2#" IsChecked="{Binding Dobot2_isChecked}"/>
+        <Image Style="{StaticResource DobotImg_2}"  Source="{Binding RobotModel.StateDobot_2,Converter={StaticResource sti},Mode=OneWay}" 
+               Grid.Row="1" Grid.Column="1" Width="15" Height="15" Stretch="Fill" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+               Margin="45,5"/>
+
+        <WrapPanel Grid.Row="1" Grid.Column="2">
+            <TextBlock Text="{Binding RobotModel.Dobot3_X}" Margin="2,30" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_Y}" Margin="2,30" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_Z}" Margin="2,30" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_R}" Margin="2,30" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_J1}" Margin="2,20" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_J2}" Margin="2,20" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_J3}" Margin="2,20" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+            <TextBlock Text="{Binding RobotModel.Dobot3_J4}" Margin="2,20" Style="{StaticResource DataText}" Background="MediumAquamarine"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="1" Grid.Column="2">
+            <TextBlock Text="X" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Y" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Z" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="R" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J1"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J2"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J3"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J4"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+        </WrapPanel>
+        <RadioButton x:Name="dobot3" Content="Dobot3#" Grid.Row="1" Grid.Column="2" 
+                     VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5" FontStyle="Italic" FontWeight="ExtraBlack" 
+                     Command="{Binding SelectBtnCmd}" CommandParameter="Dobot3#" IsChecked="{Binding Dobot3_isChecked}"/>
+        <Image Style="{StaticResource DobotImg_3}"  Source="{Binding RobotModel.StateDobot_3,Converter={StaticResource sti},Mode=OneWay}" 
+               Grid.Row="1" Grid.Column="2" Width="15" Height="15" Stretch="Fill" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+               Margin="45,5"/>
+
+        <WrapPanel Grid.Row="1" Grid.Column="3">
+            <TextBlock Text="{Binding RobotModel.Dobot4_X}" Margin="2,30" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_Y}" Margin="2,30" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_Z}" Margin="2,30" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_R}" Margin="2,30" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_J1}" Margin="2,20" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_J2}" Margin="2,20" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_J3}" Margin="2,20" Style="{StaticResource DataText}" Background="Olive"/>
+            <TextBlock Text="{Binding RobotModel.Dobot4_J4}" Margin="2,20" Style="{StaticResource DataText}" Background="Olive"/>
+        </WrapPanel>
+        <WrapPanel Grid.Row="1" Grid.Column="3">
+            <TextBlock Text="X" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Y" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="Z" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="R" Margin="17,15" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J1"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J2"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J3"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+            <TextBlock Text="J4"  Margin="17,40" Style="{StaticResource DecorateText}"/>
+        </WrapPanel>
+        <RadioButton x:Name="dobot4" Content="Dobot4#" Grid.Row="1" Grid.Column="3"  
+                     VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="5" FontStyle="Italic" FontWeight="ExtraBlack"
+                     Command="{Binding SelectBtnCmd}" CommandParameter="Dobot4#" IsChecked="{Binding Dobot4_isChecked}"/>
+        <Image Style="{StaticResource DobotImg_4}"  Source="{Binding RobotModel.StateDobot_4,Converter={StaticResource sti},Mode=OneWay}" 
+               Grid.Row="1" Grid.Column="3" Width="15" Height="15" Stretch="Fill" VerticalAlignment="Bottom" HorizontalAlignment="Right"
+               Margin="45,5"/>
+        
+        <Button x:Name="ZeroBtn" Grid.Row="2" Height="30" Width="70" Margin="65,45,65,15" Content="回零" Style="{x:Null}" Command="{Binding ZeroCmd}"/>
+        <Button x:Name="SuckOpenBtn" Grid.Row="2" Grid.Column="2" Height="30" Width="70" Margin="175,45,155,15" Grid.ColumnSpan="2" Content="吸盘开" Style="{x:Null}" Command="{Binding SuckOpenCmd}"/>
+        <Button x:Name="SuckCloseBtn" Grid.Row="2" Grid.Column="3" Height="30" Width="70" Margin="0,45,75,15" HorizontalAlignment="Right" Content="吸盘关" Style="{x:Null}" Command="{Binding SuckCloseCmd}"/>
+        <Image x:Name="SuckState" Grid.Row="2" Grid.Column="3" Height="15" Width="15" Margin="148,52,38,22" Source="{Binding RobotEndEffectorState,Converter={StaticResource suckSti},Mode=OneWay}"/>
+
+    </Grid>
+    
+    
+    
+    
+</Page>

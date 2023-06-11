@@ -1,0 +1,64 @@
+﻿syntax = "proto3";
+
+enum ConnectState
+{
+	CONNECTED = 0;
+	DISCONNECTED = 1;
+}
+
+message Pose
+{
+	repeated float endEffectorCor = 1;
+	repeated float jointAngle = 2;
+}
+
+message JogJointParams
+{
+	repeated float velocity = 1;
+	repeated float acceleration =2;
+}
+message JogCoordinateParams
+{
+	repeated float velocity = 1;
+	repeated float acceleration =2;
+}
+message JOGCommonParams
+{
+	repeated float velocityRatio =1;
+	repeated float accelerationRatio =2;
+}
+
+message PTPJointParams
+{
+	repeated float velocity = 1;
+	repeated float acceleration =2;
+}
+message PTPCoordinateParams
+{
+	repeated float velocity = 1;
+	repeated float acceleration =2;
+}
+message PTPCommonParams
+{
+	repeated float velocityRatio =1;
+	repeated float accelerationRatio =2;
+}
+
+
+message DobotData{
+	string name = 1;
+	int32 id = 2;
+	ConnectState liveState = 3;
+	repeated Pose pose =4;
+	string alarmState = 5;
+	repeated float homeParams =6;
+	repeated float endEffectorParams = 7;
+	repeated bool endEffectorSuctionCup = 8;
+	repeated JogJointParams jogJointParams = 9;
+	repeated JogCoordinateParams jogCoordinateParams = 10;
+	repeated JOGCommonParams jogCommonParams = 11;
+	repeated PTPJointParams ptpJointParams = 12;
+	repeated PTPCoordinateParams ptpCoordinateParams = 13;
+	repeated PTPCommonParams ptpCommonParams = 14;
+
+}
