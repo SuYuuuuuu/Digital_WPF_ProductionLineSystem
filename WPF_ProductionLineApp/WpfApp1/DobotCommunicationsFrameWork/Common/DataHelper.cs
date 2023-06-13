@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO.Ports;
+using System.Linq;
+using System.Net.Sockets;
 using System.Windows;
+using HslCommunication.Profinet.Siemens;
 using static DobotRealTimeData.Types;
 
 namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
@@ -11,6 +15,9 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
     {
         private static DobotNonRealTimeData? dobotNoneRealTimeData;
         private static DobotRealTimeData? dobotRealTimeData;
+        private static Conveyor_Data? conveyorData;
+        private static List<Cylinder_Data> cylinderDatas = new List<Cylinder_Data>();
+        private static List<PositionSensor_Data> positionSensorDatas = new List<PositionSensor_Data>();
         static float[]? pose;
         static float[]? homeParams;
         static float[]? jogJointParams;
@@ -22,6 +29,10 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
         //static float[] ptpJumpParams;
         static string? name;
         static bool[]? suctionCup;
+        private static bool[]? inputSignal;
+        private static bool[]? outputSignal;
+        private static int cylinder_Num = 5; //气缸个数
+        private static int positionSensorData_Num = 8;//红外传感器个数
 
         public static DobotNonRealTimeData GetDobotNonRealTimeData(int id, SerialPort port)
         {
@@ -52,7 +63,7 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
         }
 
 
-        public static DobotRealTimeData GetDobotRealTimeData(int id,SerialPort port)
+        public static DobotRealTimeData GetDobotRealTimeData(int id, SerialPort port)
         {
             pose = DobotHelper.GetPose(port);
             suctionCup = DobotHelper.GetEndEffectorSuctionCup(port);
@@ -60,14 +71,77 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
             {
                 Id = id,
                 LiveState = DobotConnectState.Connected,//
-                Pose = {pose},
+                Pose = { pose },
                 AlarmState = string.Empty,//
-                EndEffectorSuctionCup = {suctionCup},
+                EndEffectorSuctionCup = { suctionCup },
                 DateTime = DateTime.Now.Ticks.ToString()
             };
 
             return dobotRealTimeData;
 
+        }
+
+
+        static byte[] data;
+        static byte[] res_in;
+        static byte[] res;
+        //获取PLC数据，包含了传送带状态、红外传感器状态、气缸状态数据
+        //这里可以设置获取规则，譬如分开获取，一起获取等,这里为一起读取
+        public static void SendPLCData(SiemensS7Net plc_Server, Socket client)
+        {
+            if (plc_Server == null) return;
+            inputSignal = plc_Server.ReadBool("I0.0", 16).Content;
+            outputSignal = plc_Server.ReadBool("Q0.0", 16).Content;
+            //开始分配---------------------,根据具体PLC程序内写的信号地址赋值
+            conveyorData = new Conveyor_Data()
+            {
+                Id = 20000,
+                IsOpened = outputSignal[8]
+            };
+            data = CommonHelper.Serialize(conveyorData);
+            res = new byte[] { 2, (byte)data.Length }.Concat(data).ToArray();
+            for (int i = 0; i < cylinder_Num; i++)
+            {
+                Cylinder_Data cylinderData = new Cylinder_Data()
+                {
+                    Id = 30000 + i,
+                    IsOpened = outputSignal[1 + i],
+                    DataTime = DateTime.Now.Ticks.ToString()
+                };
+                data = CommonHelper.Serialize(cylinderData);
+                res_in = new byte[] { 3, (byte)data.Length }.Concat(data).ToArray();
+                res = res.Concat(res_in).ToArray();
+                //cylinderDatas.Add(cylinderData);
+            }
+
+            for (int i = 0; i < positionSensorData_Num; i++)
+            {
+                PositionSensor_Data positionSensorData = new PositionSensor_Data()
+                {
+                    Id = 40000 + i,
+                    IsActived = inputSignal[3 + i],
+                    DataTime = DateTime.Now.Ticks.ToString()
+                };
+                data = CommonHelper.Serialize(positionSensorData);
+                res_in = new byte[] { 4, (byte)data.Length }.Concat(data).ToArray();
+                res = res.Concat(res_in).ToArray();
+                //positionSensorDatas.Add(positionSensorData);
+            }
+
+            // byte[] data = CommonHelper.Serialize(inputSignal);
+            // byte[] lenArr = new byte[] { (byte)2, (byte)data.Length }; //前缀包括两个字节(数据类型和长度) 2---输入信号
+            // byte[] res_in = lenArr.Concat(data).ToArray();
+            // data = CommonHelper.Serialize(outputSignal);
+            // lenArr = new byte[] { (byte)3, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)  3---输出信号
+            // byte[] res_out = lenArr.Concat(data).ToArray();
+            // byte[] end = res_in.Concat(res_out).ToArray();
+            client.BeginSend(res, 0, res.Length, SocketFlags.None, EndSendData, client);
+        }
+
+        private static void EndSendData(IAsyncResult ar)
+        {
+            Socket client = ar.AsyncState as Socket;
+            client.EndSend(ar);
         }
     }
 }

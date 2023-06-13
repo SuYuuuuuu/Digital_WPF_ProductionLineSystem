@@ -62,8 +62,6 @@ namespace WpfProductionLineApp.ViewModels
         private bool[] SignalInputs_Receive;
         private bool[] SignalOutputs_Receive;
 
-        private InputSignal inputSignal;
-        private OutputSignal outputSignal;
         public byte dobotType { get; set; }
 
         [ObservableProperty]
@@ -239,11 +237,11 @@ namespace WpfProductionLineApp.ViewModels
                         //方案三：一个一个发送 + 数据打包发送
                         for (int i = 0; i < armModel.portLists.Count; i++)
                         {
-                            //机械臂的Id从1000开始
-                            dobotData = DataHelper.GetDobotNonRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 + 1000, armModel.portLists[i]);
+                            //机械臂的Id从10000开始
+                            dobotData = DataHelper.GetDobotNonRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 + 10000, armModel.portLists[i]);
                             SendDobotData(dobotData, client_ServerSocket);
                         }
-                        await Task.Delay(100);//相当于发送时间(已经不等于发送时间了）
+                        await Task.Delay(200);//相当于发送时间(已经不等于发送时间了）
                     }
 
                 });//开启发送非实时数据线程
@@ -255,12 +253,12 @@ namespace WpfProductionLineApp.ViewModels
                         if (source_Tcp.IsCancellationRequested) break;
                         for (int i = 0; i < armModel.portLists.Count; i++)
                         {
-                            dobotData = DataHelper.GetDobotRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 +1000, armModel.portLists[i]);
+                            dobotData = DataHelper.GetDobotRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 + 10000, armModel.portLists[i]);
                             SendDobotData(dobotData, client_ServerSocket);
                         }
                         if (armModel.StateAubo == ConnectState.Connected)
                             SendData(Auboi5Method.JointAngle, client_ServerSocket, 5); //到时候整合到上面去
-                        await Task.Delay(10);
+                        await Task.Delay(20);
                     }
 
                 });//开启发送实时数据线程
@@ -585,8 +583,6 @@ namespace WpfProductionLineApp.ViewModels
         {
             ServerModel.PlcServer = new SiemensS7Net(type, ip);
             OperateResult connect = ServerModel.PlcServer.ConnectServer();
-            InputSignal input;
-            OutputSignal output;
             if (connect.IsSuccess)
             {
                 ServerModel.PLCServerConnectText = "已连接！";
@@ -598,17 +594,18 @@ namespace WpfProductionLineApp.ViewModels
                     while (true)
                     {
                         if (token_Plc.IsCancellationRequested) return;
-                        await Task.Delay(500);//每1秒发送数据到客户端
+                        await Task.Delay(500);//每0.5秒发送数据到客户端
                         //SignalInputs_Send = ServerModel.PlcServer.ReadBool("I0.0", 16).Content;
                         //SignalOutputs_Send = ServerModel.PlcServer.ReadBool("Q0.0", 16).Content;
 
                         for (int i = 0; i < ServerModel.SocketLists.Count; i++)
                         {
-                            input = GetInputSignal();
-                            output = GetOutputSignal();
-                            // SendData(SignalInputs_Send, ServerModel.SocketLists[i], 1);
-                            // SendData(SignalOutputs_Send, ServerModel.SocketLists[i], 2);
-                            SendPLCSignalData(input, output, ServerModel.SocketLists[i]);
+                            // input = GetInputSignal();
+                            // output = GetOutputSignal();
+                            // // SendData(SignalInputs_Send, ServerModel.SocketLists[i], 1);
+                            // // SendData(SignalOutputs_Send, ServerModel.SocketLists[i], 2);
+                            // SendPLCSignalData(input, output, ServerModel.SocketLists[i]);
+                            DataHelper.SendPLCData(ServerModel.PlcServer,ServerModel.SocketLists[i]);
                         }
                     }
                 }, token_Plc);//开启发送PLC数据的线程
@@ -621,36 +618,18 @@ namespace WpfProductionLineApp.ViewModels
         }//创建新的PLC连接
 
 
-        private InputSignal GetInputSignal()
-        {
-            inputSignal = new InputSignal()
-            {
-                Id = 0,
-                InputSignal_ = { ServerModel.PlcServer.ReadBool("I0.0", 16).Content }
-            };
-            return inputSignal;
-        }
 
-        private OutputSignal GetOutputSignal()
-        {
-            outputSignal = new OutputSignal()
-            {
-                Id = 0,
-                OutputSignal_ = { ServerModel.PlcServer.ReadBool("Q0.0", 16).Content }
-            };
-            return outputSignal;
-        }
 
-        private void SendPLCSignalData(InputSignal inputSignal, OutputSignal outputSignal, Socket client)
-        {
-            byte[] data = CommonHelper.Serialize(inputSignal);
-            byte[] lenArr = new byte[] { (byte)2, (byte)data.Length }; //前缀包括两个字节(数据类型和长度) 2---输入信号
-            byte[] res_in = lenArr.Concat(data).ToArray();
-            data = CommonHelper.Serialize(outputSignal);
-            lenArr = new byte[] { (byte)3, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)  3---输出信号
-            byte[] res_out = lenArr.Concat(data).ToArray();
-            byte[] end = res_in.Concat(res_out).ToArray();
-            client.BeginSend(end, 0, end.Length, SocketFlags.None, EndSendData, client);
-        }
+        // private void SendPLCData(Socket client)
+        // {
+        //     byte[] data = CommonHelper.Serialize(inputSignal);
+        //     byte[] lenArr = new byte[] { (byte)2, (byte)data.Length }; //前缀包括两个字节(数据类型和长度) 2---输入信号
+        //     byte[] res_in = lenArr.Concat(data).ToArray();
+        //     data = CommonHelper.Serialize(outputSignal);
+        //     lenArr = new byte[] { (byte)3, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)  3---输出信号
+        //     byte[] res_out = lenArr.Concat(data).ToArray();
+        //     byte[] end = res_in.Concat(res_out).ToArray();
+        //     client.BeginSend(end, 0, end.Length, SocketFlags.None, EndSendData, client);
+        // }
     }
 }
