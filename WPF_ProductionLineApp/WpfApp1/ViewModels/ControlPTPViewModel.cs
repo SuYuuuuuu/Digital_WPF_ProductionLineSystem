@@ -442,7 +442,9 @@ namespace WpfProductionLineApp.ViewModels
 
         private void GetAlarmState()//获取报警状态
         {
-            curControlJogViewModel.RobotPort?.GetAlarmsState();
+            string stateText =  curControlJogViewModel.RobotPort?.GetAlarmsState();
+            if(stateText == string.Empty) return;
+            MessageBox.Show(stateText);
         }
 
         private void ClearAllAlarmState()//清除所有报警状态

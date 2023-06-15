@@ -16,9 +16,9 @@ namespace WpfProductionLineApp.Models
     {
         public Dictionary<string, SerialPort> serialPorts = new Dictionary<string, SerialPort>();//已经连接的串口号和对应的机械臂
         public List<SerialPort> portLists = new List<SerialPort>();//已经连接的机械臂
-        public Dictionary<SerialPort, int> port2IndexDic = new Dictionary<SerialPort, int>();//根据串口可以查找到其索引（第几台）
-        public Dictionary<int, SerialPort> Index2portDic = new Dictionary<int, SerialPort>();//根据索引能够查找到串口
-        public Dictionary<string, RobotSuckState> robot2EndEffector = new Dictionary<string, RobotSuckState>(); //根据
+        public Dictionary<SerialPort, int> port2IndexDic = new Dictionary<SerialPort, int>();//根据串口可以查找到其索引（第几台）(实时的)
+        public Dictionary<int, SerialPort> Index2portDic = new Dictionary<int, SerialPort>();//根据索引能够查找到串口(实时的)
+        public Dictionary<string, RobotSuckState> robot2EndEffector = new Dictionary<string, RobotSuckState>(); //根据串口名字找到其末端吸盘状态
 
         private string serialPort_1;
         public string SerialPort_1

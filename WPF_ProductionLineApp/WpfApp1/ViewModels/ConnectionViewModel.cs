@@ -1,13 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO.Ports;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using WpfProductionLineApp.Auboi5FrameWork;
 using WpfProductionLineApp.DobotCommunicationsFrameWork;
+using WpfProductionLineApp.DobotCommunicationsFrameWork.Common;
 using WpfProductionLineApp.Models;
 
 namespace WpfProductionLineApp.ViewModels
@@ -34,7 +38,7 @@ namespace WpfProductionLineApp.ViewModels
                 Aubo_ConnectState = "断开连接"
             };
             WeakReferenceMessenger.Default.Send<RobotArmModel>(robotModel);//在连接时发送实例引用给其他viewModel
-            WeakReferenceMessenger.Default.Send<ConnectionViewModel>(connectionViewModel);       //将自身引用发送给注册号的ViewModel    
+            WeakReferenceMessenger.Default.Send<ConnectionViewModel>(connectionViewModel);       //将自身引用发送给注册号的ViewModel
             //WeakReferenceMessenger.Default.Register<ServerViewModel>(this, OnReceived);
         }
 
@@ -124,32 +128,32 @@ namespace WpfProductionLineApp.ViewModels
                 case "COM6":
                     robotModel.StateDobot_1 = ConnectState.Connected;
                     robotModel.Dobot1_ConnectState = "连接成功";
-                    robotModel.port2IndexDic.Add(port, 1);
-                    robotModel.Index2portDic.Add(1, port);
+                    robotModel.port2IndexDic.Add(port, 10000);
+                    robotModel.Index2portDic.Add(10000, port);
                     //CreateTaskWithCancelToken(tokenSource_1, token_1,com);
                     StartTimer(com);
                     break;
                 case "COM5":
                     robotModel.StateDobot_2 = ConnectState.Connected;
                     robotModel.Dobot2_ConnectState = "连接成功";
-                    robotModel.port2IndexDic.Add(port, 2);
-                    robotModel.Index2portDic.Add(2, port);
+                    robotModel.port2IndexDic.Add(port, 10001);
+                    robotModel.Index2portDic.Add(10001, port);
                     StartTimer(com);
                     //CreateTaskWithCancelToken(tokenSource_2, token_2,com);
                     break;
                 case "COM7":
                     robotModel.StateDobot_3 = ConnectState.Connected;
                     robotModel.Dobot3_ConnectState = "连接成功";
-                    robotModel.port2IndexDic.Add(port, 3);
-                    robotModel.Index2portDic.Add(3, port);
+                    robotModel.port2IndexDic.Add(port, 10002);
+                    robotModel.Index2portDic.Add(10002, port);
                     StartTimer(com);
                     //CreateTaskWithCancelToken(tokenSource_3, token_3,com);
                     break;
                 case "COM4":
                     robotModel.StateDobot_4 = ConnectState.Connected;
                     robotModel.Dobot4_ConnectState = "连接成功";
-                    robotModel.port2IndexDic.Add(port, 4);
-                    robotModel.Index2portDic.Add(4, port);
+                    robotModel.port2IndexDic.Add(port, 10003);
+                    robotModel.Index2portDic.Add(10003, port);
                     StartTimer(com);
                     //CreateTaskWithCancelToken(tokenSource_4, token_4,com);
                     break;
@@ -165,6 +169,11 @@ namespace WpfProductionLineApp.ViewModels
             if (com == null) return;
             if (robotModel.serialPorts.ContainsKey(com))
             {
+                ObservableCollection<Socket> sockets = Locator.ServiceProvide.GetService<ServerViewModel>().ServerModel.SocketLists;
+                foreach (Socket socket in sockets) //发送机械臂断开消息
+                {
+                    DataHelper.SendDisconnectData(robotModel.port2IndexDic[robotModel.serialPorts[com]], socket);
+                }                
                 DobotHelper.Disconnect(robotModel.serialPorts[com]);
                 robotModel.Index2portDic.Remove(robotModel.port2IndexDic[robotModel.serialPorts[com]]);
                 robotModel.port2IndexDic.Remove(robotModel.serialPorts[com]);

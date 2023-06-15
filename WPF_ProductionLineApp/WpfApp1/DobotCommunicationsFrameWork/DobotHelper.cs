@@ -13,6 +13,8 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
     internal static class DobotHelper
     {
         private static Dictionary<SerialPort, DataMethod> port_data_Dic = new Dictionary<SerialPort, DataMethod>();//每一个port对应一个实例数据接收和处理方法，用字典存储起来
+        public static Dictionary<SerialPort, DataMethod> Port_data_Dic{get => port_data_Dic;private set{}}
+
         /// <summary>
         /// 发送端获取校验位字节
         /// </summary>
@@ -826,6 +828,8 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
             byte[] res = ClearAllAlarmsState();
             port.Write(res, 0, res.Length);
             Thread.Sleep(10);
+            if(!port_data_Dic.ContainsKey(port)) return;
+            port_data_Dic[port].AlarmTexts = string.Empty;
         }
 
         private static byte[] ClearAllAlarmsState()
@@ -850,11 +854,14 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
         /// 获取报警状态
         /// </summary>
         /// <param name="port"></param>
-        public static void GetAlarmsState(this SerialPort port)
+        public static string GetAlarmsState(this SerialPort port)
         {
             byte[] res = GetAlarmsState();
             port.Write(res, 0, res.Length);
             Thread.Sleep(10);
+            if (port_data_Dic.ContainsKey(port))
+                return port_data_Dic[port].AlarmTexts;
+            return string.Empty;
         }
 
         private static byte[] GetAlarmsState()

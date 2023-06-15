@@ -238,7 +238,7 @@ namespace WpfProductionLineApp.ViewModels
                         for (int i = 0; i < armModel.portLists.Count; i++)
                         {
                             //机械臂的Id从10000开始
-                            dobotData = DataHelper.GetDobotNonRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 + 10000, armModel.portLists[i]);
+                            dobotData = DataHelper.GetDobotNonRealTimeData(armModel.port2IndexDic[armModel.portLists[i]], armModel.portLists[i]);
                             SendDobotData(dobotData, client_ServerSocket);
                         }
                         await Task.Delay(200);//相当于发送时间(已经不等于发送时间了）
@@ -253,12 +253,12 @@ namespace WpfProductionLineApp.ViewModels
                         if (source_Tcp.IsCancellationRequested) break;
                         for (int i = 0; i < armModel.portLists.Count; i++)
                         {
-                            dobotData = DataHelper.GetDobotRealTimeData(armModel.port2IndexDic[armModel.portLists[i]] - 1 + 10000, armModel.portLists[i]);
+                            dobotData = DataHelper.GetDobotRealTimeData(armModel.port2IndexDic[armModel.portLists[i]], armModel.portLists[i]);
                             SendDobotData(dobotData, client_ServerSocket);
                         }
                         if (armModel.StateAubo == ConnectState.Connected)
                             SendData(Auboi5Method.JointAngle, client_ServerSocket, 5); //到时候整合到上面去
-                        await Task.Delay(20);
+                        await Task.Delay(50);
                     }
 
                 });//开启发送实时数据线程
@@ -284,13 +284,15 @@ namespace WpfProductionLineApp.ViewModels
             ReceiveState receiveState = (ReceiveState)ar.AsyncState;//接收从beginReceive中传递来的参数
             Socket client = receiveState.cilentSocket;
             byte[] buffer = receiveState.buffer;
-            bufferList.AddRange(buffer);
+            int receiveLen = client.EndReceive(ar);
+            bufferList.AddRange(buffer[0..receiveLen]);
             try
             {
                 if (client.Poll(10, SelectMode.SelectRead)) //用于检测客户端是否存活
                     return;
                 /*-----数据处理函数------*/
-                ProcessData(buffer, client, ar);
+                //ProcessData(buffer, client, ar);
+                ProcessProtobufData(client, receiveLen);
                 /*------继续异步接收数据----------*/
                 ReceiveData(client);
             }
@@ -301,122 +303,189 @@ namespace WpfProductionLineApp.ViewModels
                 ServerModel.SocketLists.Remove(client);
             }
         }//接收回调函数
-        private void ProcessData(byte[] buffer, Socket client, IAsyncResult result)
+
+        private void ProcessProtobufData(Socket client, int len)
         {
             if (client == null || !client.Connected)
                 return;
-            int length = client.EndReceive(result);//包含了数据头的长度，原有数据长度为length-1（这里结束接收数据）
-            byte[] receivedBytes;
-            while (bufferList.Count >= 4)
+            while (bufferList.Count > 0)
             {
-                if (bufferList[0] == 0xAA)//包头字节
+                //数据类型+数据长度+数据
+                //数据类型0 -机械臂实时数据  1--机械臂非实时数据 2--传送带数据 3-气缸数据 4-传感器数据 50->100--产品数据  9--Jog运动指令  10--Ptp运动指令  11--末端指令
+                //这里接收到
+                int dataType = bufferList[0];
+                int packageLen = bufferList[1];
+                if (bufferList.Count < packageLen + 2) break; //说明接收尚未完全，退出循环继续接受
+                if(dataType==0)
                 {
-                    int len = bufferList[2];
-                    if (bufferList.Count < len + 4) //数据区尚未接收完整
-                    {
-                        break;
-                    }
-                    receivedBytes = new byte[len + 4];
-                    //得到完整的数据，复制到ReceiveBytes中进行校验
-                    bufferList.CopyTo(0, receivedBytes, 0, len + 4);
-                    byte checkSum = DobotHelper.GetByteOfPayloadCheckSum_Receive(receivedBytes[3..(receivedBytes.Length - 1)]);
-                    if ((checkSum + receivedBytes[receivedBytes.Length - 1]) % 256 == 0)
-                    {
-                        DataProcess(receivedBytes);
-                        bufferList.RemoveRange(0, len + 4);
-                    }
-                    else
-                    {
-                        bufferList.RemoveRange(0, len + 4);
-                        //Debug.Log("数据校验不正确");
-                        continue;
-                    }
+                    DobotRealTimeData data = CommonHelper.DeserializeRealTimeData(bufferList.ToArray()[2..(2 + packageLen)]);
+                    //后续对数据处理
                 }
-                else//帧头不正确
+                else if(dataType==1)
                 {
-                    bufferList.RemoveAt(0);
-                    //Debug.Log("帧头不正确");
+                    DobotNonRealTimeData data = CommonHelper.DeserializeNonRealTimeData(bufferList.ToArray()[2..(2 + packageLen)]);
                 }
+                else if(dataType==2)
+                {
+                    Conveyor_Data data =  CommonHelper.DeserializeConveyorData(bufferList.ToArray()[2..(2 + packageLen)]);
+                }
+                else if(dataType==3)
+                {
+                    Cylinder_Data data =  CommonHelper.DeserializeCylinderData(bufferList.ToArray()[2..(2 + packageLen)]);
+                }
+                else if(dataType==4)
+                {
+                    PositionSensor_Data data =  CommonHelper.DeserializePositionSensorData(bufferList.ToArray()[2..(2 + packageLen)]);
+                }
+                else if(dataType ==9)
+                {
+                    int ID = BitConverter.ToInt32(bufferList.ToArray()[2..6],0);
+                    int jogCmd = bufferList[packageLen + 1];
+                    SetJogCmd(ID,jogCmd);
+                }
+                else if(dataType ==10)
+                {
+
+                }
+                else if(dataType==11)
+                {
+                    int ID = BitConverter.ToInt32(bufferList.ToArray()[2..6], 0);
+                    bool isOpened = BitConverter.ToBoolean(new byte[] { bufferList.ToArray()[packageLen + 1] });//最后一个字节为数据
+                    SetSuckCmd(ID, isOpened);
+                }
+                bufferList.RemoveRange(0,2+packageLen);
             }
-        }//接收的数据处理函数
-        private void DataProcess(byte[] receivedBytes)
-        {
-            byte dataType = receivedBytes[1];//数据头，代表了哪种数据类型
-            int len = receivedBytes[2];
-            if (len == 0) return;//负载中没有数据
-            switch (dataType)
-            {
-                case 0://byte[]-----string
-                    string msgString = Encoding.GetEncoding("GBK").GetString(receivedBytes, 3, len);
-                    break;
 
-                case 1://byte[]-----uint[]
-                    uint[] MsgUint = new uint[len / 4];
-                    for (int i = 3, count = 0; i < len + 3; i += 4, count++)
-                    {
-                        MsgUint[count] = BitConverter.ToUInt32(receivedBytes[i..(i + 4)]);
-                    }
-                    break;
-
-                case 2://byte[]-----bool[]
-                    byte[] res = new byte[len];
-                    int signalType = receivedBytes[3];//信号类型
-                    Buffer.BlockCopy(receivedBytes, 4, res, 0, len);
-                    switch (signalType)
-                    {
-                        case 1:
-                            SignalInputs_Receive = Array.ConvertAll(res, value => value == 1 ? true : false);
-                            break;
-                        case 2:
-                            SignalOutputs_Receive = Array.ConvertAll(res, value => value == 1 ? true : false);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-
-                case 3://byte[]-----float[]
-                    int dobotType = receivedBytes[3];
-                    switch (dobotType)
-                    {
-                        case 1:
-                            ChangeByteToFloat(out msgFloat_1, receivedBytes, len);
-                            SetRobotJoint(msgFloat_1, dobotType);
-                            break;
-                        case 2:
-                            ChangeByteToFloat(out msgFloat_2, receivedBytes, len);
-                            SetRobotJoint(msgFloat_2, dobotType);
-                            break;
-                        case 3:
-                            ChangeByteToFloat(out msgFloat_3, receivedBytes, len);
-                            SetRobotJoint(msgFloat_3, dobotType);
-                            break;
-                        case 4:
-                            ChangeByteToFloat(out msgFloat_4, receivedBytes, len);
-                            SetRobotJoint(msgFloat_4, dobotType);
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-            }
         }
 
-        private void ChangeByteToFloat(out float[] data, byte[] bytes, int len)
+        private void SetJogCmd(int ID,int cmd)
         {
-            float[] floats = new float[(len - 1) / 4];
-            for (int i = 4, count = 0; i < 3 + len; i += 4, count++)
-            {
-                floats[count] = BitConverter.ToSingle(bytes[i..(i + 4)]);
-            }
-            data = floats;
+            if (!armModel.Index2portDic.ContainsKey(ID)) return;
+            jogCmd jog = new jogCmd(){isJoint=0};//默认坐标轴点动          
+            DobotHelper.SetJogCmd(armModel.Index2portDic[ID],jog,(jogMode)cmd,true);
         }
-        private void SetRobotJoint(float[] target, int dobotType)
+        private void SetSuckCmd(int ID,bool cmd)
         {
-            if (target == null || !armModel.Index2portDic.ContainsKey(dobotType)) return;
-            ulong cmdIndex = 0;
-            DobotHelper.SetPTPCmd(armModel.Index2portDic[dobotType], target, ptpMode.MOVJ_ANGLE, ref cmdIndex, false);
+            if (!armModel.Index2portDic.ContainsKey(ID)) return;
+            DobotHelper.SetEndEffectorSuctionCup(armModel.Index2portDic[ID], cmd, cmd, true);
         }
+
+        // private void ProcessData(byte[] buffer, Socket client, IAsyncResult result)
+        // {
+        //     if (client == null || !client.Connected)
+        //         return;
+        //     int length = client.EndReceive(result);//包含了数据头的长度，原有数据长度为length-1（这里结束接收数据）
+        //     byte[] receivedBytes;
+        //     while (bufferList.Count >= 4)
+        //     {
+        //         if (bufferList[0] == 0xAA)//包头字节
+        //         {
+        //             int len = bufferList[2];
+        //             if (bufferList.Count < len + 4) //数据区尚未接收完整
+        //             {
+        //                 break;
+        //             }
+        //             receivedBytes = new byte[len + 4];
+        //             //得到完整的数据，复制到ReceiveBytes中进行校验
+        //             bufferList.CopyTo(0, receivedBytes, 0, len + 4);
+        //             byte checkSum = DobotHelper.GetByteOfPayloadCheckSum_Receive(receivedBytes[3..(receivedBytes.Length - 1)]);
+        //             if ((checkSum + receivedBytes[receivedBytes.Length - 1]) % 256 == 0)
+        //             {
+        //                 DataProcess(receivedBytes);
+        //                 bufferList.RemoveRange(0, len + 4);
+        //             }
+        //             else
+        //             {
+        //                 bufferList.RemoveRange(0, len + 4);
+        //                 //Debug.Log("数据校验不正确");
+        //                 continue;
+        //             }
+        //         }
+        //         else//帧头不正确
+        //         {
+        //             bufferList.RemoveAt(0);
+        //             //Debug.Log("帧头不正确");
+        //         }
+        //     }
+        // }//接收的数据处理函数
+        // private void DataProcess(byte[] receivedBytes)
+        // {
+        //     byte dataType = receivedBytes[1];//数据头，代表了哪种数据类型
+        //     int len = receivedBytes[2];
+        //     if (len == 0) return;//负载中没有数据
+        //     switch (dataType)
+        //     {
+        //         case 0://byte[]-----string
+        //             string msgString = Encoding.GetEncoding("GBK").GetString(receivedBytes, 3, len);
+        //             break;
+
+        //         case 1://byte[]-----uint[]
+        //             uint[] MsgUint = new uint[len / 4];
+        //             for (int i = 3, count = 0; i < len + 3; i += 4, count++)
+        //             {
+        //                 MsgUint[count] = BitConverter.ToUInt32(receivedBytes[i..(i + 4)]);
+        //             }
+        //             break;
+
+        //         case 2://byte[]-----bool[]
+        //             byte[] res = new byte[len];
+        //             int signalType = receivedBytes[3];//信号类型
+        //             Buffer.BlockCopy(receivedBytes, 4, res, 0, len);
+        //             switch (signalType)
+        //             {
+        //                 case 1:
+        //                     SignalInputs_Receive = Array.ConvertAll(res, value => value == 1 ? true : false);
+        //                     break;
+        //                 case 2:
+        //                     SignalOutputs_Receive = Array.ConvertAll(res, value => value == 1 ? true : false);
+        //                     break;
+        //                 default:
+        //                     break;
+        //             }
+        //             break;
+
+        //         case 3://byte[]-----float[]
+        //             int dobotType = receivedBytes[3];
+        //             switch (dobotType)
+        //             {
+        //                 case 1:
+        //                     ChangeByteToFloat(out msgFloat_1, receivedBytes, len);
+        //                     SetRobotJoint(msgFloat_1, dobotType);
+        //                     break;
+        //                 case 2:
+        //                     ChangeByteToFloat(out msgFloat_2, receivedBytes, len);
+        //                     SetRobotJoint(msgFloat_2, dobotType);
+        //                     break;
+        //                 case 3:
+        //                     ChangeByteToFloat(out msgFloat_3, receivedBytes, len);
+        //                     SetRobotJoint(msgFloat_3, dobotType);
+        //                     break;
+        //                 case 4:
+        //                     ChangeByteToFloat(out msgFloat_4, receivedBytes, len);
+        //                     SetRobotJoint(msgFloat_4, dobotType);
+        //                     break;
+        //                 default:
+        //                     break;
+        //             }
+        //             break;
+        //     }
+        // }
+
+        // private void ChangeByteToFloat(out float[] data, byte[] bytes, int len)
+        // {
+        //     float[] floats = new float[(len - 1) / 4];
+        //     for (int i = 4, count = 0; i < 3 + len; i += 4, count++)
+        //     {
+        //         floats[count] = BitConverter.ToSingle(bytes[i..(i + 4)]);
+        //     }
+        //     data = floats;
+        // }
+        // private void SetRobotJoint(float[] target, int dobotType)
+        // {
+        //     if (target == null || !armModel.Index2portDic.ContainsKey(dobotType)) return;
+        //     ulong cmdIndex = 0;
+        //     DobotHelper.SetPTPCmd(armModel.Index2portDic[dobotType], target, ptpMode.MOVJ_ANGLE, ref cmdIndex, false);
+        // }
 
 
 
@@ -605,7 +674,7 @@ namespace WpfProductionLineApp.ViewModels
                             // // SendData(SignalInputs_Send, ServerModel.SocketLists[i], 1);
                             // // SendData(SignalOutputs_Send, ServerModel.SocketLists[i], 2);
                             // SendPLCSignalData(input, output, ServerModel.SocketLists[i]);
-                            DataHelper.SendPLCData(ServerModel.PlcServer,ServerModel.SocketLists[i]);
+                            DataHelper.SendPLCData(ServerModel.PlcServer, ServerModel.SocketLists[i]);
                         }
                     }
                 }, token_Plc);//开启发送PLC数据的线程

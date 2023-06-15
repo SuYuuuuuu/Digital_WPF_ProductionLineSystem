@@ -16,11 +16,6 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
         public DataMethod()
         {
             bufferList = new List<byte>(2048);
-            //Id2ParamsDic = new Dictionary<int, float[]>()
-            //{
-            //    {10,Pose},{30,HomeParams},{70,JogJointParams},{71,JogCoordinateParams},{72,JogCommonParams},
-            //    {80,PTPJointParams},{81,PTPCoordinateParams},{82,PTPJumpParams},{83,PTPCommonParams},{87,PTPJump2Params}
-            //};
         }
 
 
@@ -51,6 +46,9 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
         public ulong[] Ulongs { get { return ulongs; } private set { } }
         private bool[] bools;
         public bool[] Bools { get { return bools; } private set { } }
+
+        private string alarmTexts; //存储报警信息
+        public string AlarmTexts { get => alarmTexts; set => alarmTexts = value; }
 
         /// <summary>
         /// 数据接收后执行的委托方法
@@ -144,7 +142,7 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
             }
             else if (type == typeof(float[]))
             {
-                switch (id)
+                switch (id)//采用不同数组分开存储float数据
                 {
                     case 10:
                         Pose = SelectArrAndProcess(len, pars);
@@ -186,16 +184,19 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
                 bytes = new byte[len - 2];
                 bytes = pars;
                 string alarmTxt = ByteToString(bytes);
-                List<int> alarmList = new List<int>();
+                alarmTexts = string.Empty;
+                //List<int> alarmList = new List<int>();
                 for (int i = alarmTxt.Length - 1; i >= 0; i--) //转换为对应的key值
                 {
                     if (alarmTxt[i] == '1')
-                        alarmList.Add(127 - i);
-                }
-                for (int i = 0; i < alarmList.Count; i++)
-                {
-                    if (CommunicationProtocol.alarmStateDic.ContainsKey(alarmList[i]))
-                        MessageBox.Show(CommunicationProtocol.alarmStateDic[alarmList[i]]);
+                    {
+                        if (CommunicationProtocol.alarmStateDic.ContainsKey(127-i))
+                        {
+                            alarmTexts += string.Format("报警信息序号{0}: {1}\n",127-i,CommunicationProtocol.alarmStateDic[127-i]);
+                            //MessageBox.Show(CommunicationProtocol.alarmStateDic[alarmList[i]]);
+                        }
+                    }
+                    //alarmList.Add(127 - i);
                 }
             }
             else if (type == typeof(UInt32[]))
@@ -265,7 +266,6 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork
                         pars[i],pars[i+1],
                         pars[i+2], pars[i+3]
                     }, 0), 4);
-                //Console.WriteLine(floats[count]);
             }
             return res;
         }

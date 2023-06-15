@@ -18,6 +18,8 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
         private static Conveyor_Data? conveyorData;
         private static List<Cylinder_Data> cylinderDatas = new List<Cylinder_Data>();
         private static List<PositionSensor_Data> positionSensorDatas = new List<PositionSensor_Data>();
+        static string alarmStates;
+        static DobotConnectState liveState;
         static float[]? pose;
         static float[]? homeParams;
         static float[]? jogJointParams;
@@ -67,12 +69,15 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
         {
             pose = DobotHelper.GetPose(port);
             suctionCup = DobotHelper.GetEndEffectorSuctionCup(port);
+            alarmStates = DobotHelper.GetAlarmsState(port);
+            liveState = DobotHelper.Port_data_Dic.ContainsKey(port)?DobotConnectState.Connected:DobotConnectState.Disconnected;
+
             dobotRealTimeData = new DobotRealTimeData()
             {
                 Id = id,
-                LiveState = DobotConnectState.Connected,//
+                LiveState = liveState,//通过查询串口列表检测机械臂连接状态
                 Pose = { pose },
-                AlarmState = string.Empty,//
+                AlarmState = alarmStates,//设置报警状态
                 EndEffectorSuctionCup = { suctionCup },
                 DateTime = DateTime.Now.Ticks.ToString()
             };
@@ -129,10 +134,10 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
             }
 
             // byte[] data = CommonHelper.Serialize(inputSignal);
-            // byte[] lenArr = new byte[] { (byte)2, (byte)data.Length }; //前缀包括两个字节(数据类型和长度) 2---输入信号
+            // byte[] lenArr = new byte[] { (byte)2, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)
             // byte[] res_in = lenArr.Concat(data).ToArray();
             // data = CommonHelper.Serialize(outputSignal);
-            // lenArr = new byte[] { (byte)3, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)  3---输出信号
+            // lenArr = new byte[] { (byte)3, (byte)data.Length }; //前缀包括两个字节(数据类型和长度)
             // byte[] res_out = lenArr.Concat(data).ToArray();
             // byte[] end = res_in.Concat(res_out).ToArray();
             client.BeginSend(res, 0, res.Length, SocketFlags.None, EndSendData, client);
@@ -142,6 +147,16 @@ namespace WpfProductionLineApp.DobotCommunicationsFrameWork.Common
         {
             Socket client = ar.AsyncState as Socket;
             client.EndSend(ar);
+        }
+
+
+        public static void SendDisconnectData(int id,Socket client)
+        {
+            byte[] res = new byte[6];
+            res[0] = 5;
+            res[1] = 4;
+            Buffer.BlockCopy(BitConverter.GetBytes(id), 0, res, 2, 4);
+            client.BeginSend(res,0,res.Length,SocketFlags.None, EndSendData, client);
         }
     }
 }
